@@ -33,6 +33,7 @@ resource "aws_ssm_association" "this" {
 			targets                          = var.targets
 			wait_for_success_timeout_seconds = var.wait_for_success_timeout_seconds
 		}
+    if length(var.document_name) > 0
 	}
 
 	dynamic "targets" {
