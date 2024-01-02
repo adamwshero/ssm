@@ -1,6 +1,12 @@
 ########################
 # SSM Document Variables
 ########################
+variable "documents" {
+  description = "Map of documents."
+  type        = any
+  default     = {}
+}
+
 variable "document_name" {
   description = "(Required) The name of the document."
   type        = string
@@ -58,10 +64,10 @@ variable "version_name" {
 ###########################
 # SSM Association Variables
 ###########################
-variable "name" {
-  description = "(Required) The name of the SSM document to apply."
-  type        = string
-  default     = null
+variable "ssm_association" {
+  description = "Map of ssm associations."
+  type        = any
+  default     = {}
 }
 
 variable "apply_only_at_cron_interval" {

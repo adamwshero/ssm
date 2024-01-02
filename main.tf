@@ -1,6 +1,6 @@
 resource "aws_ssm_document" "this" {
   for_each = {
-    for key in var.document_name : key.name => {
+    for key in var.documents : key.name => {
 			name               = key.document_name
 			attachments_source = key.attachments_source 
 			content            = key.content
@@ -11,7 +11,7 @@ resource "aws_ssm_document" "this" {
 			tags               = key.tags
 			version_name       = key.version_name
 		}
-    if length(var.document_name) > 0
+    if length(var.documents) > 0
   }
 }
 
@@ -33,7 +33,7 @@ resource "aws_ssm_association" "this" {
 			targets                          = var.targets
 			wait_for_success_timeout_seconds = var.wait_for_success_timeout_seconds
 		}
-    if length(var.document_name) > 0
+    if length(var.documents) > 0
 	}
 
 	dynamic "targets" {
