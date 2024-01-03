@@ -1,3 +1,14 @@
+locals {
+  type = var.type != null ? var.type : (
+    length(var.values) > 0 ? "StringList" : (
+      can(tostring(var.value)) ? (try(tobool(var.secure_type) == true, false) ? "SecureString" : "String") : "StringList"
+  ))
+  secure_type = local.type == "SecureString"
+  list_type   = local.type == "StringList"
+  string_type = local.type == "String"
+  value       = local.list_type ? (length(var.values) > 0 ? jsonencode(var.values) : var.value) : var.value
+}
+
 resource "aws_ssm_document" "this" {
   for_each = {
     for key in var.documents : key.name => {
@@ -45,69 +56,45 @@ resource "aws_ssm_association" "this" {
 	}
 }
 
-resource "aws_instance" "this" {
-	ami                         = var.instance_ami
-	instance_type               = var.instance_type
-	subnet_id                   = var.instance_subnet_id
-	associate_public_ip_address = var.associate_public_ip
-	iam_instance_profile        = var.instance_profile
-	vpc_security_group_ids      = [var.security_group_ids]
+resource "aws_ssm_parameter" "this" {
+  count = var.create_parameter && !var.ignore_value_changes ? 1 : 0
 
-	tags = var.tags
+  name        = var.name
+  type        = local.type
+  description = var.description
+
+  value          = local.secure_type ? local.value : null
+  insecure_value = local.list_type || local.string_type ? local.value : null
+
+  tier            = var.tier
+  key_id          = local.secure_type ? var.key_id : null
+  allowed_pattern = var.allowed_pattern
+  data_type       = var.data_type
+
+  tags = var.tags
 }
 
-locals {
-  iam_role_name = try(coalesce(var.iam_role_name, var.name), "")
-}
+resource "aws_ssm_parameter" "ignore_value" {
+  count = var.create_parameter && var.ignore_value_changes ? 1 : 0
 
-data "aws_iam_policy_document" "assume_role_policy" {
-  count = var.create && var.create_iam_instance_profile ? 1 : 0
+  name        = var.name
+  type        = local.type
+  description = var.description
 
-  statement {
-    sid     = "EC2AssumeRole"
-    actions = ["sts:AssumeRole"]
+  value          = local.secure_type ? local.value : null
+  insecure_value = local.list_type || local.string_type ? local.value : null
 
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.${data.aws_partition.current.dns_suffix}"]
-    }
-  }
-}
+  tier            = var.tier
+  key_id          = local.secure_type ? var.key_id : null
+  allowed_pattern = var.allowed_pattern
+  data_type       = var.data_type
 
-resource "aws_iam_role" "this" {
-  count = var.create_iam_instance_profile ? 1 : 0
-
-  name        = var.iam_role_use_name_prefix ? null : local.iam_role_name
-  name_prefix = var.iam_role_use_name_prefix ? "${local.iam_role_name}-" : null
-  path        = var.iam_role_path
-  description = var.iam_role_description
-
-  assume_role_policy    = data.aws_iam_policy_document.assume_role_policy[0].json
-  permissions_boundary  = var.iam_role_permissions_boundary
-  force_detach_policies = true
-
-  tags = merge(var.tags, var.iam_role_tags)
-}
-
-resource "aws_iam_role_policy_attachment" "this" {
-  for_each = { for k, v in var.iam_role_policies : k => v if var.create_iam_instance_profile }
-
-  policy_arn = each.value
-  role       = aws_iam_role.this[0].name
-}
-
-resource "aws_iam_instance_profile" "this" {
-  count = var.create_iam_instance_profile ? 1 : 0
-
-  role = aws_iam_role.this[0].name
-
-  name        = var.iam_role_use_name_prefix ? null : local.iam_role_name
-  name_prefix = var.iam_role_use_name_prefix ? "${local.iam_role_name}-" : null
-  path        = var.iam_role_path
-
-  tags = merge(var.tags, var.iam_role_tags)
+  tags = var.tags
 
   lifecycle {
-    create_before_destroy = true
+    ignore_changes = [
+      insecure_value,
+      value
+    ]
   }
 }

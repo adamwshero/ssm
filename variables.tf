@@ -1,8 +1,18 @@
+#################
+# SSM Global Vars
+#################
+
+ variable "tags" {
+  description = "(Optional) A map of tags to assign to the object. If configured with a provider default_tags (configuration block)[https://registry.terraform.io/providers/hashicorp/aws/latest/docs#default_tags-configuration-block] present, tags with matching keys will overwrite those defined at the provider-level."
+  type        = map(string)
+  default     = {}
+}
+
 ########################
 # SSM Document Variables
 ########################
 variable "documents" {
-  description = "Map of documents."
+  description = "Map of SSM documents."
   type        = any
   default     = {}
 }
@@ -47,12 +57,6 @@ variable "target_type" {
   description = "The target type which defines the kinds of resources the document can run on. For example, /AWS::EC2::Instance. For a list of valid resource types, see AWS Resource Types Reference (http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-template-resource-type-ref.html)"
   type        = string
   default     = null
-}
-
-variable "tags" {
-  description = "(Optional) A map of tags to assign to the object. If configured with a provider default_tags (configuration block)[https://registry.terraform.io/providers/hashicorp/aws/latest/docs#default_tags-configuration-block] present, tags with matching keys will overwrite those defined at the provider-level."
-  type        = any
-  default     = {}
 }
 
 variable "version_name" {
@@ -160,54 +164,78 @@ variable "values" {
   default     = null
 }
 
-#############################
-# IAM Role / Instance Profile
-#############################
+###############
+# SSM Parameter
+###############
 
-variable "create_iam_instance_profile" {
-  description = "Determines whether an IAM instance profile is created or to use an existing IAM instance profile"
-  type        = bool
-  default     = false
-}
-
-variable "iam_role_name" {
-  description = "Name to use on IAM role created"
-  type        = string
-  default     = null
-}
-
-variable "iam_role_use_name_prefix" {
-  description = "Determines whether the IAM role name (`iam_role_name` or `name`) is used as a prefix"
+variable "create_parameter" {
+  description = "Whether to create SSM Parameter"
   type        = bool
   default     = true
 }
 
-variable "iam_role_path" {
-  description = "IAM role path"
+variable "ignore_value_changes" {
+  description = "Whether to create SSM Parameter and ignore changes in value"
+  type        = bool
+  default     = false
+}
+
+variable "secure_type" {
+  description = "Whether the type of the value should be considered as secure or not?"
+  type        = bool
+  default     = false
+}
+
+variable "name" {
+  description = "Name of SSM parameter"
   type        = string
   default     = null
 }
 
-variable "iam_role_description" {
-  description = "Description of the role"
+variable "value" {
+  description = "Value of the parameter"
   type        = string
   default     = null
 }
 
-variable "iam_role_permissions_boundary" {
-  description = "ARN of the policy that is used to set the permissions boundary for the IAM role"
+variable "values" {
+  description = "List of values of the parameter (will be jsonencoded to store as string natively in SSM)"
+  type        = list(string)
+  default     = []
+}
+
+variable "description" {
+  description = "Description of the parameter"
   type        = string
   default     = null
 }
 
-variable "iam_role_policies" {
-  description = "Policies attached to the IAM role"
-  type        = map(string)
-  default     = {}
+variable "type" {
+  description = "Type of the parameter. Valid types are String, StringList and SecureString."
+  type        = string
+  default     = null
 }
 
-variable "iam_role_tags" {
-  description = "A map of additional tags to add to the IAM role/profile created"
-  type        = map(string)
-  default     = {}
+variable "tier" {
+  description = "Parameter tier to assign to the parameter. If not specified, will use the default parameter tier for the region. Valid tiers are Standard, Advanced, and Intelligent-Tiering. Downgrading an Advanced tier parameter to Standard will recreate the resource."
+  type        = string
+  default     = null
+}
+
+variable "key_id" {
+  description = "KMS key ID or ARN for encrypting a parameter (when type is SecureString)"
+  type        = string
+  default     = null
+}
+
+variable "allowed_pattern" {
+  description = "Regular expression used to validate the parameter value."
+  type        = string
+  default     = null
+}
+
+variable "data_type" {
+  description = "Data type of the parameter. Valid values: text, aws:ssm:integration and aws:ec2:image for AMI format."
+  type        = string
+  default     = null
 }
